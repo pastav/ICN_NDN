@@ -1,8 +1,14 @@
 # SC-Project-3
 SC-Project-3
 
+Use the run.sh file to run the server, 14 sensors and 6 devices.
+./run.sh <insert name of node (unique)>
+
 Run Centralized Server using:
 python3 central.py
+
+--------------------------------------------------
+To run the components one by one:
 
 Run NDN Server using:
 python3 server.py --name <INSERT_NAME>

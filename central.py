@@ -10,12 +10,11 @@ import logging
 logging.getLogger("werkzeug").disabled = True
 logging.getLogger("apscheduler").propagate = False
 
-#----------Sambit----------------
 from flask_jwt_extended import JWTManager, jwt_required, create_access_token, get_jwt_identity
 from rbac import is_admin, users
 import tpm as ss
 import encryptionCompression as ec
-#---------------------------------
+
 from flask_talisman import Talisman
 csp = {
     'default-src': [
@@ -34,18 +33,15 @@ headers = {
             'Content-Type': 'application/json'
             }
 aes_key = ec.load_aes_key_from_file('keys/aes_key.bin')
-# Dictionary to store information about registered nodes
+#to store information about registered nodes and their sensors, devices
 registered_nodes = defaultdict(dict)
 registered_devices = defaultdict(dict)
 registered_sensors = defaultdict(dict)
 registered_sensors_ports = defaultdict(dict)
 
-#-----------------RBAC (Sambit)----------------
 app.config['JWT_SECRET_KEY'] = 'your_secret_key'
 jwt = JWTManager(app)
 storage = ss.SecureStorage()
-#----------------------------------------
-
 @app.route('/centralregistry', methods=['POST'])
 def register_node():
     # print(request)
@@ -58,7 +54,7 @@ def register_node():
     registered_devices[data['node_name']] = data['device_names'].split(',')
     registered_sensors[data['node_name']] = data['sensor_name'].split(',')
     registered_sensors_ports[data['node_name']] = data['sensor_port'].split(',')
-    # Store registration information
+    #registration information
     #change for PI
     # registered_nodes["https://rasp-0"+str(node_address)[-2:]+".berry.scss.tcd.ie"] = node_data
     # registered_sensors[sensor_name] = sensor_port
@@ -66,6 +62,7 @@ def register_node():
     return jsonify({'message': 'Registration successful'}), 200
 
 def check_alive():
+    #hits the check alive api and removes if the node is not alive
     for node_name, node_add in registered_nodes.copy().items():
         # print(registered_nodes)
         try:
@@ -86,6 +83,7 @@ def print_list():
     print("Registered Sensor Ports: ",registered_sensors_ports)
 
 @app.route('/finddata', methods=['POST'])
+#routes the interest data to the node which has the data
 def find_data():
     data=request.get_json()
     interest_sensor=data['sensor_val']
@@ -96,6 +94,7 @@ def find_data():
             }
     payload = {"sensor_val":interest_sensor, "duration":data['duration']}
     payload = json.dumps(payload)
+    #finds the node which has the data
     for key, value in registered_sensors.copy().items():
         if interest_sensor in value:
             ip_withdata=registered_nodes[key]
@@ -111,7 +110,7 @@ def find_data():
     response = jsonify({'message': 'Not found in central'})
     response.status_code = 404
     return response
-#--------------------RBAC (Sambit)--------------------
+
 @app.route('/login', methods=['POST'])
 def login():
     data = request.get_json()
@@ -136,7 +135,7 @@ def read_secure_storage():
         return jsonify({"secure storage data": f"{retrieved_data}"}), 200
     else:
         return jsonify({"message": "Access denied"}), 403
-#--------------------RBAC----------------------------
+    
 if __name__ == '__main__':
     scheduler = BackgroundScheduler()
     scheduler.add_job(func=check_alive, trigger="interval", seconds=10)

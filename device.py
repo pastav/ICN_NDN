@@ -30,6 +30,7 @@ parser.add_argument('--duration', type=str, help='List of values')
 args = parser.parse_args()
 sensor_data_req = args.data
 
+#gets the sensor data from the node
 def get_sensor_data():
     for data in sensor_data_req:
         data_payload = {"sensor_val": data, "duration": args.duration}
@@ -43,6 +44,7 @@ def get_sensor_data():
             print("Unable to get sernsor data")
             return False
 
+#broadcasts itself as alive to the local node
 def broadcast_alive():
     json_payload = {"device_name": args.name, "interest": args.interest}
     data_payload = json.dumps(json_payload)
@@ -54,23 +56,7 @@ def broadcast_alive():
     except requests.exceptions.RequestException as e:
         print("Unable to register with server")
 
-# def recv_data():
-#     # base_url = "httpss://"+hostname[:-2]+"{}"+".berry.scss.tcd.ie:33696/registernodes"
-#     interest_packet=args.interest
-#     print("Interest packet = ",interest_packet)
-#     interest_payload = {"interest_data": interest_packet}
-#     interest_payload = json.dumps(interest_payload)
-#     try:
-#         response = requests.post(central_url, headers=headers, data=interest_payload, timeout=1)
-#         print(response.json())
-#         return response.json()
-#     except:
-#         print("Central server down, Distributed mode enabled")
-#         # data_url ="httpss://rasp-0"+str(IPAddr)[-2:]+".berry.scss.tcd.ie:33696/getdata"
-#         data_url ="httpss://localhost:33696/getdata"
-#         response = requests.post(data_url, headers=headers, data=interest_payload, timeout=5)
-#         print(response.json())
-
+#to run the functions in the background
 scheduler = BackgroundScheduler()
 # scheduler.add_job(func=recv_data, trigger="interval", seconds=5)
 scheduler.add_job(func=broadcast_alive, trigger="interval", seconds=5)

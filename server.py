@@ -17,13 +17,11 @@ logging.getLogger("apscheduler").propagate = False
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 from flask_talisman import Talisman
 
-#-----Sambit---------------
 import encryptionCompression as ec
 import base64
 from base64 import b64decode
 import tpm as ss
 from flask import send_file
-#--------------------------
 csp = {
     'default-src': [
         '\'self\'',
@@ -63,7 +61,7 @@ headers = {
             }
 cached_custom_line = ['Accessing', 'Cached_Data']
 
-
+#registers with the central.py, if down, runs in distributed mode and broadcasts itself and the data with UDP broadcast.
 def syncwithnodes():
     # print("chalu hogaya bhai")
     # print(filenames)
@@ -103,7 +101,8 @@ def syncwithnodes():
         server_socket.sendto(encrypted_data, (broadcast_address, 33650))
         server_socket.close()
         return True
-
+    
+#discovers the udp broadcasts and registers the nodes.
 def discover_services(port=33650):
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     client_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -147,6 +146,7 @@ def check_alive():
     # print(hostname, IPAddr)
     return jsonify({'message': '{} is alive!'.format("https://rasp-0"+str(IPAddr)[-2:]+".berry.scss.tcd.ie")}), 200
 
+#checks the nodes which are alive, and removes the dead nodes.
 def hit_alive():
     for node_name, node_add in dis_registered_nodes.copy().items():
         # print(f"Node Address: {node_address}")
@@ -179,6 +179,7 @@ def cleanup_devices():
     # print(registered_devices)
     return ("Cleaned: ",devices_to_remove)
 
+#used to register the sensors and devices
 @app.route('/register', methods=['POST'])
 def register_node():
     data = request.data
@@ -248,7 +249,6 @@ def read_secure_storage():
     return jsonify({retrieved_data}), 200
 
 
-#-----------------------ENCRYPTION AND COMPRESSION (Sambit)--------------------------
 @app.route('/share_key', methods=['POST'])
 def share_private_key_function():
     try:
@@ -279,8 +279,8 @@ def read_data():
     decompressed_text = ec.decompress_text(decrypted_message)
     print("Decrypted data:", decompressed_text)
     return decompressed_text
-#--------------------------------------------
 
+#used to get the data from locally/central/distributed
 @app.route('/getsensordata', methods=['POST'])
 def getsensordata():
     data=request.get_json()
@@ -368,46 +368,6 @@ def getsensordata():
         except:
             print("not available in distributed")
         return jsonify({'message': 'Incorrect Json/Not available'}), 404
-
-# @app.route('/getdata', methods=['POST'])
-# def getdata():
-#     filenames = next(walk("data/"), (None, None, []))[2]  # [] if no file
-#     # interest_packet=request.data.decode('UTF-8')
-#     data=request.get_json()
-#     interest_packet=data['interest_data']
-#     print("Interest packet = ",interest_packet)
-#     interest_payload = {"interest_data": interest_packet}
-#     interest_payload = json.dumps(interest_payload)
-#     try:
-#         response = requests.post(central_url+"/centralregistry", headers=headers, data=interest_payload, timeout=1, verify=False)
-#         return response.json()
-#     except:
-#         print("Distributed mode being used")
-#         if interest_packet in filenames:
-#             print("Found in local")
-#             f = open("data/"+interest_packet, 'r')
-#             interest_data = f.read()
-#             f.close()
-#             return jsonify({'data': interest_data}), 200
-#         print("not found in local")
-#         # for key, value in ip_data.items():
-#         for key, value in registered_nodes.copy().items():
-#             if interest_packet in value.split(','):
-#                 ip_withdata=key
-#                 # print(ip_withdata)
-#                 data_url = str(ip_withdata)+":33696/getdata"
-#                 payload = {"interest_data": interest_packet}
-#                 headers = {
-#                 'Content-Type': 'application/json'
-#                 }
-#                 try:
-#                     response = requests.post(data_url, headers=headers, data=payload, timeout=5, verify=False)
-#                     print(response)
-#                 except:
-#                     print("Error, the Node is not up: ",data_url)
-#                 return response.json()
-#         print("Not Found")
-#         return 404
 
 
 def clearcache():

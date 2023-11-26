@@ -126,6 +126,7 @@ else:
 
 database_path = "data/sensor.db"
 
+#returns alive whenever hit
 @app.route('/checkalive', methods=['GET'])
 def check_alive():
     print("Alive")
@@ -133,6 +134,7 @@ def check_alive():
     # return jsonify({'message': '{} is alive!'.format("https://rasp-0"+str(IPAddr)[-2:]+".berry.scss.tcd.ie")}), 200
     return jsonify({'message': '{} sensor is alive!'.format(value)}), 200
 
+#broadcasts itself as alive to the local node
 def broadcast_alive():
     json_payload = {"sensor_name": value, "port": args.port}
     data_payload = json.dumps(json_payload)
@@ -145,38 +147,35 @@ def broadcast_alive():
     except requests.exceptions.RequestException as e:
         print("Unable to register with server")
 
+#generates sensor data as given in the input params
 def generate_sensor_data():
     if value == "Latitude" or value == "Longitude":
         data = (minval + maxval) / 2
         random_variation = random.uniform(-0.0001, 0.0001)
         data = data + random_variation
-        # Ensure the temperature stays within the specified range
         data = max(minval, min(data, maxval))
         return round(data, 6)
 
     data = (minval + maxval) / 2
     random_variation = random.uniform(-2, 2)
     data = data + random_variation
-    # Ensure the temperature stays within the specified range
     data = max(minval, min(data, maxval))
     return round(data, 2)
 
-# Function to insert temperature data into the SQLite database
+#insert sensor data into the SQLite database
 def insert_sensor_data():
     # print("creating db")
 
-    # Connect to the SQLite database
+    #connect to the SQLite database
     db = sqlite_utils.Database(database_path)
 
-    # Create a table if it doesn't exist
+    #create a table if it doesn't exist
     if value not in db.table_names():
         db[value].create({
             "timestamp": int,
             value: float
         })
-    # Generate data
     insert_data = generate_sensor_data()
-    # Insert data into the database
     db[value].insert({
         "timestamp": int(time.time()),
         value: insert_data
@@ -191,12 +190,11 @@ def insert_sensor_data():
             print(f"Error: {e}")
     # print("Added to db")
 
+#get the data from the database
 @app.route('/sensor_data/<float:duration_hours>', methods=['GET'])
 def get_sensor_data(duration_hours):
-    # Connect to the SQLite database
     db = sqlite_utils.Database(database_path)
 
-    # Retrieve the first 50 rows from the "temperature_data" table
     # result = db.execute('SELECT * FROM {}'.format(value)).fetchall()
     result = db.execute('SELECT * FROM {} ORDER BY timestamp DESC LIMIT {}'.format(value, duration_hours*60*60/5)).fetchall()
     csv_data = StringIO(newline='')
